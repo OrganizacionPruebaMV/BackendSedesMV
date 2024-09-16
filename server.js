@@ -46,7 +46,7 @@ app.use(morgan('combined')); // Puedes ajustar el formato según tus preferencia
 const db = mysql.createConnection({
   host: '127.0.0.1',
   user: 'root',
-  password: '1717',
+  password: 'root',
   database: 'dbsedes',
 });
 
@@ -373,7 +373,7 @@ app.get('/getpersonbyemail/:correo', (req, res) => {
 
 ///////////////////////27/09 CAMBIO///////////////
 app.get('/allaccounts', (req, res) => {
-  db.query('  SELECT idPerson, Nombres, Apellidos, FechaNacimiento, Correo, Password, Carnet, Telefono, FechaCreacion, Status, Longitud, Latitud, R.NombreRol FROM Person P INNER JOIN Roles R on R.IdRol = P.IdRol WHERE P.Status=1 AND (P.IdRol !=4);', (err, results) => {
+  db.query('SELECT idPerson, Nombres, Apellidos, FechaNacimiento, Correo, Password, Carnet, Telefono, FechaCreacion, Status, Longitud, Latitud, R.NombreRol FROM Person P INNER JOIN Roles R on R.IdRol = P.IdRol WHERE P.Status=1 AND (P.IdRol !=9);', (err, results) => {
     if (err) {
       console.error('Error al consultar la base de datos:', err);
       res.status(500).json({ error: 'Error al obtener usuarios' });
@@ -383,6 +383,17 @@ app.get('/allaccounts', (req, res) => {
   });
 });
 
+
+app.get('/allclients', (req, res) => {
+  db.query('SELECT idPerson, Nombres, Apellidos, FechaNacimiento, Correo, Password, Carnet, Telefono, FechaCreacion, Status, Longitud, Latitud, R.NombreRol FROM Person P INNER JOIN Roles R on R.IdRol = P.IdRol WHERE P.Status=1 AND P.IdRol = 8;', (err, results) => {
+    if (err) {
+      console.error('Error al consultar la base de datos:', err);
+      res.status(500).json({ error: 'Error al obtener usuarios' });
+      return;
+    }
+    res.json(results);
+  });
+});
 ////////////////////27/09///////////CAMBIO
 app.get('/user', (req, res) => {
   const { correo, password } = req.query; // Obtiene el correo y la contraseña de los parámetros de consulta
