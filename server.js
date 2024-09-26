@@ -25,6 +25,7 @@ const io = socketIo(server);
 
 io.on('connection', (socket) => {
   console.log('Un usuario se ha conectado');
+  
 
   socket.on('chat message', (msg) => {
     console.log('Mensaje recibido:', msg);
@@ -60,6 +61,7 @@ db.connect((err) => {
 
 //////////////25/09 UPDATE///////////////
 const fetch = require('node-fetch');
+const { Console } = require('console');
 
 
 
