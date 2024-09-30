@@ -46,9 +46,10 @@ app.use(morgan('combined')); // Puedes ajustar el formato según tus preferencia
 
 const db = mysql.createConnection({
   host: '127.0.0.1',
-  user: 'root',
-  password: 'root',
+  user: 'admin',
+  password: 'admin1717',
   database: 'dbsedes',
+  port: '3307'
 });
 
 db.connect((err) => {
@@ -67,16 +68,28 @@ const { Console } = require('console');
 
 app.post('/sendmessage', (req, res) => {
   const { idPerson, mensaje, idChat, Nombres } = req.body;
+  const visto = false; // Asumimos que el mensaje no está visto al enviarlo
+  const fechaRegistro = new Date(); // La fecha actual como fecha de registro
 
-  const query = 'INSERT INTO dbSedes.Mensajes(idPerson, mensaje, idChat) VALUES(?, ?, ?);';
-  db.query(query, [idPerson, mensaje, idChat], (err, result) => {
+  // Imprimir en la terminal los datos que se están enviando
+  console.log('Enviando mensaje:', {
+    idPerson,
+    mensaje,
+    idChat,
+    Nombres,
+    visto,
+    fechaRegistro
+  });
+
+  const query = 'INSERT INTO dbSedes.Mensajes(idPerson, mensaje, idChat, visto, fechaRegistro) VALUES(?, ?, ?, ?, ?);';
+  db.query(query, [idPerson, mensaje, idChat, visto, fechaRegistro], (err, result) => {
     if (err) {
       console.error('Error al insertar el mensaje:', err);
       return res.status(500).json({ error: 'Error al enviar el mensaje' });
     }
 
     // Emitir el mensaje a otros clientes a través de socket.io
-    io.emit('chat message', [idPerson, mensaje, Nombres, idChat]);
+    io.emit('chat message', [idPerson, mensaje, Nombres, idChat, visto, fechaRegistro]);
 
     const chatQuery = 'SELECT * FROM dbsedes.chats WHERE idChats = ?;';
     db.query(chatQuery, [idChat], (err, chats) => {
@@ -89,16 +102,16 @@ app.post('/sendmessage', (req, res) => {
         const chat = chats[0];
         let recipientId;
 
-        if ((chat.idPerson === null && chat.idPersonDestino!==idPerson)  || chat.idPerson === idPerson) {
+        if ((chat.idPerson === null && chat.idPersonDestino !== idPerson) || chat.idPerson === idPerson) {
           recipientId = chat.idPersonDestino;
-        } else{
+        } else {
           recipientId = chat.idPerson;
         }
-        if(recipientId===null){
+        if (recipientId === null) {
           return;
         }
 
-        const tokensQuery = 'SELECT idPerson, token FROM dbsedes.tokens WHERE idPerson = ? AND status=1;'; ///////26/09 WHERE status
+        const tokensQuery = 'SELECT idPerson, token FROM dbsedes.tokens WHERE idPerson = ? AND status = 1;';
         db.query(tokensQuery, [recipientId], async (err, tokens) => {
           if (err) {
             console.error('Error al recuperar los tokens:', err);
@@ -108,7 +121,7 @@ app.post('/sendmessage', (req, res) => {
           for (const tokenObj of tokens) {
             const token = tokenObj.token;
             const tokenData = { idChat: idChat };
-            await sendNotification(token, Nombres, mensaje, tokenData);/////////////////26/09
+            await sendNotification(token, Nombres, mensaje, tokenData);
           }
         });
       }
@@ -117,6 +130,8 @@ app.post('/sendmessage', (req, res) => {
     res.json({ message: 'Mensaje enviado exitosamente' });
   });
 });
+
+
 
 async function sendNotification(token, title, body, additionalData) {///////////////26/09
   const message = {
@@ -208,22 +223,31 @@ app.put('/logouttoken', (req, res) => {
 });
 
 
-
 app.get('/getmessage/:id', (req, res) => {
   const id = req.params.id;
 
-  const query = 'SELECT M.*, P.Nombres FROM dbsedes.Mensajes M \
-  inner join dbsedes.Person P ON P.idPerson = M.idPerson \
-  WHERE idChat = ?;';
+  const query = `
+    SELECT M.*, P.Nombres 
+    FROM dbsedes.Mensajes M 
+    INNER JOIN dbsedes.Person P ON P.idPerson = M.idPerson 
+    WHERE idChat = ?;`;
+
   db.query(query, [id], (err, results) => {
     if (err) {
       console.error('Error al consultar la base de datos:', err);
-      res.status(500).json({ error: 'Error al obtener usuarios' });
+      res.status(500).json({ error: 'Error al obtener mensajes' });
       return;
     }
+
+    // Imprimir en la terminal los resultados que se envían
+    console.log('Resultados obtenidos:', results);
+
+    // Responder con los resultados
     res.json(results);
-  });;
+  });
 });
+
+
 
 app.get('/getchats/:id', (req, res) => {
   const id = req.params.id;
